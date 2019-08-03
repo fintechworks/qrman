@@ -7,6 +7,35 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+/**
+ * <p>
+ * A parser/generator for QR Code based on the specification for Payment Systems (EMV QRCPS)
+ * </p>
+ * <p>
+ * The QR Code is basically a TLV (Tag Length value) sequence
+ * </p>
+ * <p>
+ * Each data object is made up of three individual fields.
+ * The first field is an identifier (ID) by which the data object can be referenced.
+ * The next field is a length field that explicitly indicates the number of characters
+ * included in the third field: the value field.
+ * A data object is then represented as an ID / Length / Value combination, where:
+ * </p>
+ * <ul>
+ *     <li>The ID is coded as a two-digit numeric value, with a value ranging from "00" to "99"</li>
+ *     <li>The length is coded as a two-digit numeric value, with a value ranging from "01" to "99</li>
+ *     <li>The value field has a minimum length of one character and maximum length of 99 characters.</li>
+ * </ul>
+ * <p>
+ *  In the QR Code, the data objects are organized in a tree-like structure, under the root.
+ *  A data object may be a primitive data object or a template.
+ *  A template  may include other templates and primitive data objects
+ * </p>
+ * <p>
+ * QRMessage is a recursive tree, where a value could be a leaf (one of the supported primitive types) or
+ * another QRMessage
+ * </p>
+ */
 public class QRMessage
 {
     private Map<String, Object> map = new LinkedHashMap<>();
@@ -42,13 +71,17 @@ public class QRMessage
             final int length = f00.length();
             if (f00 == null)
             {
+                //QR Code Specification for Payment Systems
+                //Payload Format Indicator
+                //The Payload Format Indicator shall contain a value of "01".
+                // All other values are RFU.
                 f00 = "01";
             }
             if (length != 2)
             {
-                throw new RuntimeException("Invalid data element 0");
+                throw new RuntimeException("Invalid data element 00");
             }
-
+            //The Payload Format Indicator (ID "00") shall be the first data object in the QR Code.
             sb.append("00");
             sb.append(String.format("%02d", length));
             sb.append(f00);
@@ -64,6 +97,7 @@ public class QRMessage
             }
             if ((itag == 0 || itag == 63) && root)
             {
+                //Tag 00 and 63 must be included at start and end respectively
                 continue;
             }
 
@@ -77,6 +111,7 @@ public class QRMessage
         // Ensure we produce the checksum
         if (root)
         {
+            //The CRC (ID "63") shall be the last data object in the QR Code.
             String payload = sb.append("6304").toString();
             return payload + computeCRC(payload.getBytes(StandardCharsets.UTF_8));
         }
@@ -318,6 +353,15 @@ public class QRMessage
         return expectedCrc.equals(crc);
     }
 
+    /**
+     * The checksum shall be calculated according to [ISO/IEC 13239] using the polynomial '1021' (hex)
+     * and initial value 'FFFF' (hex).
+     * The data over which the checksum is calculated shall cover all data objects, including their ID,
+     * Length and Value, to be included in the QR Code, in their respective order,
+     * as well as the ID and Length of the CRC itself (but excluding its Value)
+     * @param bytes
+     * @return
+     */
     private String computeCRC(byte[] bytes)
     {
         int initValue = 0xFFFF;
