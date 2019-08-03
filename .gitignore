@@ -1,0 +1,17 @@
+build
+out
+*.iml
+*.ipr
+*.iws
+*.swp
+.idea
+.vagrant
+runtime/
+.project
+.attic 
+node_modules
+.classpath
+.gradle
+gradle
+gradlew
+gradlew.bat
