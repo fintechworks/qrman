@@ -1,17 +1,33 @@
-plugins {
-    id 'java'
-    id "com.jfrog.artifactory" version "4.4.18"
+buildscript {
+    repositories {
+        maven {
+            url 'http://jenkins.aws.fintech:8081/artifactory/plugins-release'
+            credentials {
+                username = "${artifactory_user}"
+                password = "${artifactory_password}"
+            }
+            name = "maven-main-cache"
+        }
+    }
+    dependencies {
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:3.0.1"
+    }
 }
 
-apply plugin: "com.jfrog.artifactory"
+plugins {
+    id 'java'
+    id "com.jfrog.artifactory" version "4.7.3"
+}
 
-group 'com.vmantek.qr'
-version '1.0-SNAPSHOT'
-
+group 'works.fintech'
+version '1.2'
 sourceCompatibility = 1.8
 
+apply plugin: "com.jfrog.artifactory"
+apply plugin: 'maven-publish'
+
 repositories {
-    mavenCentral()
+    add buildscript.repositories.getByName("maven-main-cache")
 }
 
 dependencies {
@@ -28,4 +44,28 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+artifactory {
+    contextUrl = "${artifactory_contextUrl}"
+    publish {
+        repository {
+            repoKey = 'libs-snapshot-local'
+            username = "${artifactory_user}"
+            password = "${artifactory_password}"
+            maven = true
+
+        }       
+        defaults {
+            publications ('mavenJava')
+        }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
 }
