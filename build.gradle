@@ -14,14 +14,14 @@ buildscript {
     }
 }
 
-group 'works.fintech'
-version '1.0.1'
-sourceCompatibility = 1.8
-
 plugins {
     id 'java'
     id "com.jfrog.artifactory" version "4.7.3"
 }
+
+group 'works.fintech'
+version '1.0.1'
+sourceCompatibility = 1.8
 
 apply plugin: "com.jfrog.artifactory"
 apply plugin: 'maven-publish'
